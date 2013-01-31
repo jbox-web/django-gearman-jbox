@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>Django-gearman-jbox by jbox-web</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>Django-gearman-jbox</h1>
+        <h2></h2>
+        <a href="https://github.com/jbox-web/django-gearman-jbox" class="button"><small>View project on</small>GitHub</a>
+      </div>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h1>django-gearman-jbox</h1>
+
+<p><em>django-gearman-jbox</em> is a convenience wrapper for the <a href="http://gearman.org">Gearman</a>
+<a href="http://github.com/samuel/python-gearman">Python Bindings</a>.</p>
+
+<p>With django-gearman-jbox, you can code workers as well as clients in a Django project
+with minimal overhead in your application. Server connections etc. all take
+place in django-gearman-jbox and don't unnecessarily clog your application code.</p>
+
+<p>This library is based in large part on Fred Wenzel's <a href="https://github.com/fwenzel/django-gearman">django-gearman</a> and Jozef Ševčík's <a href="https://github.com/CodeScaleInc/django-gearman-commands">django-gearman-commands</a>.</p>
+
+<ul>
+<li>
+<a href="https://github.com/fwenzel/django-gearman">django-gearman</a> for the 'decorator way' to create workers (very cool)</li>
+<li>
+<a href="https://github.com/CodeScaleInc/django-gearman-commands">django-gearman-commands</a> for the 'gearman_server_info' command (very nice)</li>
+</ul><p>But there are some modifications :</p>
+
+<p>Workers are now launched individually, so you have to pass 2 mandatory parameters to start the worker :</p>
+
+<ul>
+<li>the Django App name where workers reside with the <code>-a</code> parameter</li>
+<li>the worker's name with <code>-n</code>
+</li>
+</ul><p>The <code>-q</code> parameter is still here and has the same function than in <a href="https://github.com/fwenzel/django-gearman">django-gearman</a>.</p>
+
+<ul>
+<li>I removed the ability of lauching many wokers at once (<code>-w</code> parameter in <a href="https://github.com/fwenzel/django-gearman">django-gearman</a>).
+I prefer having one process for each worker and Supervisord managing process. (screen is not an option)</li>
+<li>I also added a signal handler to catch SIGTERM signals send by Supervisord and SIGINT when you worker is attached to the console.
+This gives you the possibility of executing code just before the worker terminates.
+(See <code>django_gearman_jbox\management\commands\gearman_worker.py</code>, line 116)</li>
+</ul><h2>Installation</h2>
+
+<p>It's the same for both the client and worker instances of your django project :</p>
+
+<pre><code>$ pip install django-gearman-jbox
+</code></pre>
+
+<p>Add <code>django_gearman_jbox</code> to the <code>INSTALLED_APPS</code> section of <code>settings.py</code>.</p>
+
+<p>Specify the following setting in your local settings.py file:</p>
+
+<pre><code># One or more gearman servers
+GEARMAN_CLIENT_SERVERS = ['127.0.0.1']
+GEARMAN_WORKER_SERVERS = ['127.0.0.1']
+</code></pre>
+
+<h2>Workers</h2>
+
+<h3>Registering workers</h3>
+
+<p>Create a directory <code>gearman_workers</code> in any of your django apps, and define as many
+workers as you like, one worker per file. Create an empty <code>__init__.py</code> so the directory will be
+loaded as a package.</p>
+
+<p>Example :</p>
+
+<pre><code>my_django_app
+  |_ models.py
+  |_ gearman_workers
+      |_ __init__.py
+      |_ worker_foo.py
+      |_ worker_bar.py
+</code></pre>
+
+<h3>Registering tasks</h3>
+
+<p>In the worker file, you can define as many tasks as functions as you like.
+The function must accept a single argument as passed by the caller and must
+return the result of the operation, if applicable. (Note : It must accept an argument, even if you don't use it).</p>
+
+<p>Mark each of these functions as gearman tasks by decorating them with :</p>
+
+<pre><code>import django_gearman_jbox.decorators.gearman_task
+
+@gearman_task()
+def my_task_function(foo):
+  pass
+</code></pre>
+
+<h3>Task naming</h3>
+
+<p>The tasks are given a default name of their import path, with the phrase
+<code>gearman_task</code> stripped out of them, for readability reasons. You can override
+the task name by specifying <code>name</code> parameter of the decorator. Here's how :</p>
+
+<pre><code>import django_gearman_jbox.decorators.gearman_task
+
+@gearman_task(name='my-task-name')
+def my_task_function(foo):
+  pass
+</code></pre>
+
+<h3>Task parameters</h3>
+
+<p>The gearman docs specify that the task function can accept only one parameter
+(usually refered to as the <code>data</code> parameter). Additionally, that parameter
+may only be a string. Sometimes that may not be enough. What if you would like
+to pass an array or a dict? You would need to serialize and deserialize them.
+Fortunately, django-gearman-jbox can take care of this, so that you can spend
+all of your time on coding the actual task.</p>
+
+<pre><code>@gearman_task(name='my-task-name')
+def my_task_function(foo):
+  pass
+
+client.submit_job('my-task-name', {'foo': 'becomes', 'this': 'dict'})
+client.submit_job('my-task-name', Decimal(1.0))
+</code></pre>
+
+<h3>Tasks with more than one parameter</h3>
+
+<p>You can pass as many arguments as you want, of whatever (serializable) type
+you like. Here's an example job definition :</p>
+
+<pre><code>@gearman_task(name='my-task-name')
+def my_task_function(one, two, three):
+  pass
+</code></pre>
+
+<p>You can execute this function in two different ways :</p>
+
+<pre><code>client.submit_job('my-task-name', one=1, two=2, three=3)
+client.submit_job('my-task-name', args=[1, 2, 3])
+</code></pre>
+
+<p>Unfortunately, executing it like this:</p>
+
+<pre><code>client.submit_job('my-task-name', 1, 2, 3)
+</code></pre>
+
+<p>would produce the error, because <code>submit_job</code> from Gearman's Python bindings
+contains <strong>a lot</strong> of arguments and it's much easier to specify them via
+keyword names or a special <code>args</code> keyword than to type something like seven
+<code>None</code>s instead :</p>
+
+<pre><code>client.submit_job('my-task-name', None, None, None, None, None, None, None, 1, 2, 3)
+</code></pre>
+
+<p>The only limitation that you have are gearman reserved keyword parameters. As of
+Gearman 2.0.2 these are :</p>
+
+<pre><code>* data
+* unique
+* priority
+* background
+* wait_until_complete
+* max_retries
+* poll_timeout
+</code></pre>
+
+<p>So, if you want your task definition to have, for example, <code>unique</code> or
+<code>background</code> keyword parameters, you need to execute the task in a special,
+more verbose way. Here's an example of such a task and its execution :</p>
+
+<pre><code>@gearman_task(name='my-task-name')
+def my_task_function(background, unique):
+  pass
+
+client.submit_job('my-task-name', kwargs={"background": True, "unique": False})
+client.submit_job('my-task-name', args=[True, False])
+</code></pre>
+
+<p>Finally:</p>
+
+<pre><code>client.submit_job('my-task-name', background=True, unique=True, kwargs={"background": False, "unique": False})
+</code></pre>
+
+<p>Don't panic, your task is safe! That's because you're using <code>kwargs</code>
+directly. Therefore, Gearman's bindings would receive <code>True</code> for
+<code>submit_job</code> function, while your task would receive <code>False</code>.</p>
+
+<p>Always remember to double-check your parameter names with the reserved words
+list.</p>
+
+<h3>Starting a worker</h3>
+
+<p>To start a worker, run <code>python manage.py gearman_worker -a &lt;django_app_name&gt; -n &lt;worker_name&gt;</code>. It will start
+serving all registered tasks for that worker.</p>
+
+<p>Example :</p>
+
+<pre><code>$ python manage.py gearman_worker -a django_app_name -n worker_foo
+$ python manage.py gearman_worker -a django_app_name -n worker_bar
+</code></pre>
+
+<p>To spawn more than one worker see Supervisord configuration below.</p>
+
+<h3>Task queues</h3>
+
+<p>Queues are a virtual abstraction layer built on top of gearman tasks. An
+easy way to describe it is the following example: Imagine you have a task
+for fetching e-mails from the server, another task for sending the emails
+and one more task for sending SMS via an SMS gateway. A problem you may
+encounter is that the email fetching tasks may effectively "block" the worker
+(there could be so many of them, it could be so time-consuming, that no other
+task would be able to pass through). Of course, one solution would be to add
+more workers (via the Supervisord), but that would only temporarily
+solve the problem. This is where queues come in.</p>
+
+<p>The first thing to do is to pass a queue name into the job description, like
+this :</p>
+
+<pre><code>@gearman_task(name="task_foo", queue="foo")
+def function_foo(some_arg):
+  pass
+
+@gearman_task(name="task_bar", queue="bar")
+def function_bar(some_arg):
+  pass
+
+@gearman_task(name="task_babar", queue="bar")
+def function_babar(some_arg):
+  pass
+</code></pre>
+
+<p>You may then proceed to start the tasks that are bound to a specific
+queue :</p>
+
+<pre><code>python manage.py gearman_worker -a &lt;django_app_name&gt; -n &lt;worker_name&gt; -q bar
+</code></pre>
+
+<p>Be aware of the fact that if you don't specify the queue name, the worker
+will load all tasks.</p>
+
+<h3>Start workers with Supervisord</h3>
+
+<p>Supervisor - <a href="http://supervisord.org/">http://supervisord.org/</a> is babysitter for processes.
+It allows you to launch, restart and monitor running processes. In our case it will be workers.
+To do so, create one config file by worker and adjust the number of workers you want with the 'numprocs' parameter :</p>
+
+<p><code>worker_foo.conf</code> :</p>
+
+<pre><code>[program:worker_foo]
+command         = /path-to-your-virtualenv/bin/python /path-to-your-project/manage.py gearman_worker -a &lt;django_app_name&gt; -n %(program_name)s
+process_name    = %(program_name)s_%(process_num)02d
+numprocs        = 1
+autostart       = true
+autorestart     = true
+user            = myapp
+directory       = /home/myapp/
+environment     = HOME='/home/myapp',USER='myapp',LOGNAME='myapp',
+</code></pre>
+
+<p><code>worker_bar.conf</code> :</p>
+
+<pre><code>[program:worker_bar]
+command         = /path-to-your-virtualenv/bin/python /path-to-your-project/manage.py gearman_worker -a &lt;django_app_name&gt; -n %(program_name)s -q bar
+process_name    = %(program_name)s_%(process_num)02d
+numprocs        = 2
+autostart       = true
+autorestart     = true
+user            = myapp
+directory       = /home/myapp/
+environment     = HOME='/home/myapp',USER='myapp',LOGNAME='myapp',
+</code></pre>
+
+<p>You can also create a <code>groups.conf</code> file with this content :</p>
+
+<pre><code>[group:foo]
+programs=worker_foo, worker_foo2
+
+[group:bar]
+programs=worker_bar, worker_bar2
+</code></pre>
+
+<p>This will create process 'group' and allows you to reload all workers related to this group at once when you redeploy new code.</p>
+
+<p>Once you're config files are created, do <code>/etc/init.d/supervisord start</code> to start Supervisord and <code>supervisorctl reload</code> if you modify config or</p>
+
+<pre><code>supervisorctl reread
+supervisorctl update
+supervisorctl restart foo:*
+supervisorctl restart bar:*
+</code></pre>
+
+<h3>Execute code when workers die</h3>
+
+<p>Workers catch SIGTERM and SIGINT signals to kill themselves with a <code>sys.exit(0)</code> in a callback function.
+At this point in the code you can add your own function(s) which will be executed before the <code>sys.exit(0)</code>
+See <code>django_gearman_jbox\management\commands\gearman_worker.py</code>, line 116</p>
+
+<p>Note that this will impact all workers as it resides in the <code>gearman_worker.py</code> script which is global for all workers.</p>
+
+<h2>Clients</h2>
+
+<p>To make your workers work, you need a client app passing data to them.
+Create and instance of the <code>django_gearman_jbox.GearmanClient</code> class and execute submit_job with it :</p>
+
+<pre><code>from django_gearman_jbox import GearmanClient
+
+sentence = "The quick brown fox jumps over the lazy dog."
+
+client = GearmanClient()
+res = client.submit_job("foo", kwargs={"sentence": sentence})
+print "Result: '%s'" % res
+</code></pre>
+
+<p>Dispatching a background event without waiting for the result is easy as well :</p>
+
+<pre><code>client.submit_job("foo", background=True, kwargs={"sentence": sentence})
+</code></pre>
+
+<h2>Gearman Server Infos</h2>
+
+<p><code>python manage.py gearman_server_info</code> outputs current status of Gearman servers.
+If you installed Prettytable dependency, here is how output looks like :</p>
+
+<pre><code>$ python manage.py gearman_server_info
++---------------------+------------------------+
+| Gearman Server Host | Gearman Server Version |
++---------------------+------------------------+
+|    127.0.0.1:4730   |        OK 0.29         |
++---------------------+------------------------+.
+
++---------------+---------------+--------------+-------------+
+|   Task Name   | Total Workers | Running Jobs | Queued Jobs |
++---------------+---------------+--------------+-------------+
+| data_unlock   |       1       |      0       |      0      |
+| data_import   |       1       |      1       |      0      |
+| cache_cleanup |       1       |      0       |      0      |
++---------------+---------------+--------------+-------------+.
+
++-----------+------------------+-----------+-----------------+
+| Worker IP | Registered Tasks | Client ID | File Descriptor |
++-----------+------------------+-----------+-----------------+
+| 127.0.0.1 |   data_unlock    |     -     |        35       |
+| 127.0.0.1 |   data_import    |     -     |        36       |
+| 127.0.0.1 |  cache_cleanup   |     -     |        37       |
++-----------+------------------+-----------+-----------------+
+</code></pre>
+
+<p>If you have a lot of workers, you can filter output using command argument (case-sensitive):</p>
+
+<pre><code>$ python manage.py gearman_server_info cleanup
++---------------------+------------------------+--------------------+
+| Gearman Server Host | Gearman Server Version | Ping Response Time |
++---------------------+------------------------+--------------------+
+|    127.0.0.1:4730   |        OK 1.1.3        | 0.0006871223449707 |
++---------------------+------------------------+--------------------+.
+
++---------------+---------------+--------------+-------------+
+|   Task Name   | Total Workers | Running Jobs | Queued Jobs |
++---------------+---------------+--------------+-------------+
+| cache_cleanup |       1       |      0       |      0      |
++---------------+---------------+--------------+-------------+.
+
++-----------+------------------+-----------+-----------------+
+| Worker IP | Registered Tasks | Client ID | File Descriptor |
++-----------+------------------+-----------+-----------------+
+| 127.0.0.1 |  cache_cleanup   |     -     |        37       |
++-----------+------------------+-----------+-----------------+
+</code></pre>
+
+<h2>Licensing</h2>
+
+<p>This software is licensed under the <a href="http://www.mozilla.org/MPL/">Mozilla Tri-License</a>:</p>
+
+<pre><code>***** BEGIN LICENSE BLOCK *****
+Version: MPL 1.1/GPL 2.0/LGPL 2.1
+
+The contents of this file are subject to the Mozilla Public License Version
+1.1 (the "License"); you may not use this file except in compliance with
+the License. You may obtain a copy of the License at
+http://www.mozilla.org/MPL/
+
+Software distributed under the License is distributed on an "AS IS" basis,
+WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+for the specific language governing rights and limitations under the
+License.
+
+The Original Code is django-gearman.
+
+The Initial Developer of the Original Code is Mozilla.
+Portions created by the Initial Developer are Copyright (C) 2010
+the Initial Developer. All Rights Reserved.
+
+Contributor(s):
+  Frederic Wenzel &lt;fwenzel@mozilla.com&gt;&gt;
+  Jeff Balogh &lt;me@jeffbalogh.org&gt;
+  Jonas &lt;jvp@jonasundderwolf.de&gt;
+  Jozef Ševčík &lt;sevcik@codescale.net&gt;
+  Nicolas Rodriguez &lt;nrodriguez@jbox-web.com&gt;
+
+Alternatively, the contents of this file may be used under the terms of
+either the GNU General Public License Version 2 or later (the "GPL"), or
+the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+in which case the provisions of the GPL or the LGPL are applicable instead
+of those above. If you wish to allow use of your version of this file only
+under the terms of either the GPL or the LGPL, and not to allow others to
+use your version of this file under the terms of the MPL, indicate your
+decision by deleting the provisions above and replace them with the notice
+and other provisions required by the GPL or the LGPL. If you do not delete
+the provisions above, a recipient may use your version of this file under
+the terms of any one of the MPL, the GPL or the LGPL.
+
+***** END LICENSE BLOCK *****
+</code></pre>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/jbox-web/django-gearman-jbox/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/jbox-web/django-gearman-jbox/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/jbox-web/django-gearman-jbox"></a> is maintained by <a href="https://github.com/jbox-web">jbox-web</a>.</p>
+
+          <p>This page was generated by <a href="pages.github.com">GitHub Pages</a> using the Architect theme by <a href="http://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
+    </div>
+
+  
+  </body>
+</html>
