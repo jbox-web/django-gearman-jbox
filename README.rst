@@ -8,7 +8,7 @@ With django-gearman-jbox, you can code workers as well as clients in a Django pr
 with minimal overhead in your application. Server connections etc. all take
 place in django-gearman-jbox and don't unnecessarily clog your application code.
 
-This library is based in large part on Fred Wenzel's [django-gearman] and Jozef Ševčík's [django-gearman-commands].
+This library is largely based on Fred Wenzel's [django-gearman] and Jozef Ševčík's [django-gearman-commands] librairies.
 - [django-gearman][django-gearman] for the 'decorator way' to create workers (very cool)
 - [django-gearman-commands][django-gearman-commands] for the 'gearman_server_info' command (very nice)
 
