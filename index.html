@@ -1,34 +1,45 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
-    <meta charset='utf-8'>
+    <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
-    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
-
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-
     <title>Django Gearman JBox by jbox-web</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/respond.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!--[if lt IE 8]>
+    <link rel="stylesheet" href="stylesheets/ie.css">
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
   </head>
-
   <body>
-    <header>
-      <div class="inner">
-        <h1>Django Gearman JBox</h1>
-        <h2></h2>
-        <a href="https://github.com/jbox-web/django-gearman-jbox" class="button"><small>View project on</small>GitHub</a>
-      </div>
-    </header>
+      <div id="header">
+        <nav>
+          <li class="fork"><a href="https://github.com/jbox-web/django-gearman-jbox">View On GitHub</a></li>
+          <li class="downloads"><a href="https://github.com/jbox-web/django-gearman-jbox/zipball/master">ZIP</a></li>
+          <li class="downloads"><a href="https://github.com/jbox-web/django-gearman-jbox/tarball/master">TAR</a></li>
+          <li class="title">DOWNLOADS</li>
+        </nav>
+      </div><!-- end header -->
 
-    <div id="content-wrapper">
-      <div class="inner clearfix">
-        <section id="main-content">
-          <h1>django-gearman-jbox</h1>
+    <div class="wrapper">
+
+      <section>
+        <div id="title">
+          <h1>Django Gearman JBox</h1>
+          <p></p>
+          <hr>
+          <span class="credits left">Project maintained by <a href="https://github.com/jbox-web">jbox-web</a></span>
+          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></span>
+        </div>
+
+        <h1>
+<a name="django-gearman-jbox" class="anchor" href="#django-gearman-jbox"><span class="octicon octicon-link"></span></a>django-gearman-jbox</h1>
 
 <p><em>django-gearman-jbox</em> is a convenience wrapper for the <a href="http://gearman.org">Gearman</a>
 <a href="http://github.com/samuel/python-gearman">Python Bindings</a>.</p>
@@ -60,7 +71,8 @@ I prefer having one process for each worker and Supervisord managing process. (s
 <li>I also added a signal handler to catch SIGTERM signals send by Supervisord and SIGINT when you worker is attached to the console.
 This gives you the possibility of executing code just before the worker terminates.
 (See <code>django_gearman_jbox\management\commands\gearman_worker.py</code>, line 116)</li>
-</ul><h2>Installation</h2>
+</ul><h2>
+<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
 
 <p>It's the same for both the client and worker instances of your django project :</p>
 
@@ -76,9 +88,11 @@ GEARMAN_CLIENT_SERVERS = ['127.0.0.1']
 GEARMAN_WORKER_SERVERS = ['127.0.0.1']
 </code></pre>
 
-<h2>Workers</h2>
+<h2>
+<a name="workers" class="anchor" href="#workers"><span class="octicon octicon-link"></span></a>Workers</h2>
 
-<h3>Registering workers</h3>
+<h3>
+<a name="registering-workers" class="anchor" href="#registering-workers"><span class="octicon octicon-link"></span></a>Registering workers</h3>
 
 <p>Create a directory <code>gearman_workers</code> in any of your django apps, and define as many
 workers as you like, one worker per file. Create an empty <code>__init__.py</code> so the directory will be
@@ -94,7 +108,8 @@ loaded as a package.</p>
       |_ worker_bar.py
 </code></pre>
 
-<h3>Registering tasks</h3>
+<h3>
+<a name="registering-tasks" class="anchor" href="#registering-tasks"><span class="octicon octicon-link"></span></a>Registering tasks</h3>
 
 <p>In the worker file, you can define as many tasks as functions as you like.
 The function must accept a single argument as passed by the caller and must
@@ -109,7 +124,8 @@ def my_task_function(foo):
   pass
 </code></pre>
 
-<h3>Task naming</h3>
+<h3>
+<a name="task-naming" class="anchor" href="#task-naming"><span class="octicon octicon-link"></span></a>Task naming</h3>
 
 <p>The tasks are given a default name of their import path, with the phrase
 <code>gearman_task</code> stripped out of them, for readability reasons. You can override
@@ -122,7 +138,8 @@ def my_task_function(foo):
   pass
 </code></pre>
 
-<h3>Task parameters</h3>
+<h3>
+<a name="task-parameters" class="anchor" href="#task-parameters"><span class="octicon octicon-link"></span></a>Task parameters</h3>
 
 <p>The gearman docs specify that the task function can accept only one parameter
 (usually refered to as the <code>data</code> parameter). Additionally, that parameter
@@ -139,7 +156,8 @@ client.submit_job('my-task-name', {'foo': 'becomes', 'this': 'dict'})
 client.submit_job('my-task-name', Decimal(1.0))
 </code></pre>
 
-<h3>Tasks with more than one parameter</h3>
+<h3>
+<a name="tasks-with-more-than-one-parameter" class="anchor" href="#tasks-with-more-than-one-parameter"><span class="octicon octicon-link"></span></a>Tasks with more than one parameter</h3>
 
 <p>You can pass as many arguments as you want, of whatever (serializable) type
 you like. Here's an example job definition :</p>
@@ -204,7 +222,8 @@ directly. Therefore, Gearman's bindings would receive <code>True</code> for
 <p>Always remember to double-check your parameter names with the reserved words
 list.</p>
 
-<h3>Starting a worker</h3>
+<h3>
+<a name="starting-a-worker" class="anchor" href="#starting-a-worker"><span class="octicon octicon-link"></span></a>Starting a worker</h3>
 
 <p>To start a worker, run <code>python manage.py gearman_worker -a &lt;django_app_name&gt; -n &lt;worker_name&gt;</code>. It will start
 serving all registered tasks for that worker.</p>
@@ -217,7 +236,8 @@ $ python manage.py gearman_worker -a django_app_name -n worker_bar
 
 <p>To spawn more than one worker see Supervisord configuration below.</p>
 
-<h3>Task queues</h3>
+<h3>
+<a name="task-queues" class="anchor" href="#task-queues"><span class="octicon octicon-link"></span></a>Task queues</h3>
 
 <p>Queues are a virtual abstraction layer built on top of gearman tasks. An
 easy way to describe it is the following example: Imagine you have a task
@@ -254,7 +274,8 @@ queue :</p>
 <p>Be aware of the fact that if you don't specify the queue name, the worker
 will load all tasks.</p>
 
-<h3>Start workers with Supervisord</h3>
+<h3>
+<a name="start-workers-with-supervisord" class="anchor" href="#start-workers-with-supervisord"><span class="octicon octicon-link"></span></a>Start workers with Supervisord</h3>
 
 <p>Supervisor - <a href="http://supervisord.org/">http://supervisord.org/</a> is babysitter for processes.
 It allows you to launch, restart and monitor running processes. In our case it will be workers.
@@ -305,7 +326,8 @@ supervisorctl restart foo:*
 supervisorctl restart bar:*
 </code></pre>
 
-<h3>Execute code when workers die</h3>
+<h3>
+<a name="execute-code-when-workers-die" class="anchor" href="#execute-code-when-workers-die"><span class="octicon octicon-link"></span></a>Execute code when workers die</h3>
 
 <p>Workers catch SIGTERM and SIGINT signals to kill themselves with a <code>sys.exit(0)</code> in a callback function.
 At this point in the code you can add your own function(s) which will be executed before the <code>sys.exit(0)</code>
@@ -313,7 +335,8 @@ See <code>django_gearman_jbox\management\commands\gearman_worker.py</code>, line
 
 <p>Note that this will impact all workers as it resides in the <code>gearman_worker.py</code> script which is global for all workers.</p>
 
-<h2>Clients</h2>
+<h2>
+<a name="clients" class="anchor" href="#clients"><span class="octicon octicon-link"></span></a>Clients</h2>
 
 <p>To make your workers work, you need a client app passing data to them.
 Create and instance of the <code>django_gearman_jbox.GearmanClient</code> class and execute submit_job with it :</p>
@@ -332,7 +355,8 @@ print "Result: '%s'" % res
 <pre><code>client.submit_job("foo", background=True, kwargs={"sentence": sentence})
 </code></pre>
 
-<h2>Gearman Server Infos</h2>
+<h2>
+<a name="gearman-server-infos" class="anchor" href="#gearman-server-infos"><span class="octicon octicon-link"></span></a>Gearman Server Infos</h2>
 
 <p><code>python manage.py gearman_server_info</code> outputs current status of Gearman servers.
 If you installed Prettytable dependency, here is how output looks like :</p>
@@ -383,7 +407,8 @@ If you installed Prettytable dependency, here is how output looks like :</p>
 +-----------+------------------+-----------+-----------------+
 </code></pre>
 
-<h2>Licensing</h2>
+<h2>
+<a name="licensing" class="anchor" href="#licensing"><span class="octicon octicon-link"></span></a>Licensing</h2>
 
 <p>This software is licensed under the <a href="http://www.mozilla.org/MPL/">Mozilla Tri-License</a>:</p>
 
@@ -427,26 +452,11 @@ the terms of any one of the MPL, the GPL or the LGPL.
 
 ***** END LICENSE BLOCK *****
 </code></pre>
-        </section>
+      </section>
 
-        <aside id="sidebar">
-          <a href="https://github.com/jbox-web/django-gearman-jbox/zipball/master" class="button">
-            <small>Download</small>
-            .zip file
-          </a>
-          <a href="https://github.com/jbox-web/django-gearman-jbox/tarball/master" class="button">
-            <small>Download</small>
-            .tar.gz file
-          </a>
-
-          <p class="repo-owner"><a href="https://github.com/jbox-web/django-gearman-jbox"></a> is maintained by <a href="https://github.com/jbox-web">jbox-web</a>.</p>
-
-          <p>This page was generated by <a href="pages.github.com">GitHub Pages</a> using the Architect theme by <a href="http://twitter.com/jasonlong">Jason Long</a>.</p>
-        </aside>
-      </div>
     </div>
-
-            <script type="text/javascript">
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+              <script type="text/javascript">
             var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
             document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
           </script>
